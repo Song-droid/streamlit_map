@@ -3,4 +3,3 @@ folium==0.14.0
 pandas==1.4.2
 requests==2.26.0
 numpy==1.21.0
-Add requirements.txt for dependencie

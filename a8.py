@@ -10,7 +10,7 @@ import requests
 import numpy as np
 
 # Streamlit 앱 설정
-st.title("건축물 위치 도식화")
+st.title("부산광역시 설계공모 당선작 지도")
 st.markdown("엑셀 파일을 업로드하여 건물 정보의 위치와 사진을 지도에 표시합니다.")
 
 # 데이터프레임 초기화

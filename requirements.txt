@@ -1,0 +1,8 @@
+streamlit
+folium
+json
+pandas
+base64
+requests
+numpy
+Add requirements.txt for dependencie

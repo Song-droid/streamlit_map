@@ -77,25 +77,30 @@ if uploaded_file is not None:
         df = pd.read_excel(uploaded_file)
 
         # 데이터 검증: 필요한 열이 존재하는지 확인
-        required_columns = ['건물명', '건축구분', '시군구', '총사업비', '주용도', '연면적', '지상층수', '지하층수', '위도', '경도', '사진 경로']
+        required_columns = ['사업명', '주소', '시군구', '용도', '대지면적', '연면적', '총사업비', '설계자', '당선작 발표', '위도', '경도', '사진 경로']
         if not all(col in df.columns for col in required_columns):
             st.error("엑셀 파일에 필수 열이 없습니다.")
         else:
             st.write("업로드된 데이터:")
             st.write(df)
 
+            # 위도와 경도 열의 데이터 형식을 숫자형으로 변환 (문자열이 있으면 NaN으로 처리)
+            df['위도'] = pd.to_numeric(df['위도'], errors='coerce')
+            df['경도'] = pd.to_numeric(df['경도'], errors='coerce')
+
+            # 유효하지 않은 위도 및 경도 행 제거
+            df = df.dropna(subset=['위도', '경도'])
+
             # 필터 옵션 추출
             시군구_options = df['시군구'].unique().tolist()
-            건축구분_options = df['건축구분'].unique().tolist()
-            주용도_options = df['주용도'].unique().tolist()
+            용도_options = df['용도'].unique().tolist()
 
     except Exception as e:
         st.error(f"엑셀 파일을 읽는 중 오류 발생: {e}")
 
     # '부산시 전체' 옵션을 추가
     selected_시군구 = st.sidebar.multiselect("시군구 선택 (부산시 전체 포함)", ['부산시 전체'] + 시군구_options)
-    selected_건축구분 = st.sidebar.multiselect("건축구분 선택", 건축구분_options)
-    selected_주용도 = st.sidebar.multiselect("주용도 선택", 주용도_options)
+    selected_용도 = st.sidebar.multiselect("용도 선택", 용도_options)
 
     # Convert selected `시군구` names to their corresponding `sgg` codes
     selected_sgg_codes = []
@@ -113,11 +118,8 @@ if uploaded_file is not None:
         else:
             filtered_df = filtered_df[filtered_df['시군구'].isin(selected_시군구)]
 
-    if selected_건축구분:
-        filtered_df = filtered_df[filtered_df['건축구분'].isin(selected_건축구분)]
-
-    if selected_주용도:
-        filtered_df = filtered_df[filtered_df['주용도'].isin(selected_주용도)]
+    if selected_용도:
+        filtered_df = filtered_df[filtered_df['용도'].isin(selected_용도)]
 
     # 초기 지도 생성
     initial_zoom_level = 11
@@ -226,31 +228,24 @@ if uploaded_file is not None:
                     img_base64 = base64.b64encode(img_data).decode()
                     all_images_html += f"<img src='data:image/jpeg;base64,{img_base64}' style='width:100px; height:auto;'>"
 
-                for img_file in uploaded_images:
-                    if img_file.name == image_name:
-                        img_data = image_dict[img_file.name]
-                        img_base64 = base64.b64encode(img_data).decode()
-                        all_images_html += f"<img src='data:image/jpeg;base64,{img_base64}' style='width:100px; height:auto;'> "
-
                 # Popup 내용 생성
-                popup_text = (f"<div style='display: flex; width: 300px; height: auto;'>"
-                              f"<div style='flex: 1; padding: 5px; font-family: sans-serif; font-size: 14px;'>"
-                              f"<b>[건물명] {row['건물명']}</b><br>"
-                              f"[건축구분] {row['건축구분']}<br>"
-                              f"[시군구] {row['시군구']}<br>"
-                              f"[총사업비] {row['총사업비']:,} 원<br>"
-                              f"[주용도] {row['주용도']}<br>"
+                popup_text = (f"<div style='font-family: sans-serif; font-size: 12px;'>"
+                              f"<b>[사업명] {row['사업명']}</b><br>"
+                              f"[주소] {row['주소']}<br>"
+                              f"[용도] {row['용도']}<br>"
+                              f"[대지면적] {row['대지면적']} m²<br>"
                               f"[연면적] {row['연면적']} m²<br>"
-                              f"[지상층수] {row['지상층수']} 층<br>"
-                              f"[지하층수] {row['지하층수']} 층<br>"
+                              f"[총사업비] {row['총사업비']:,} 원<br>"
+                              f"[설계자] {row['설계자']}<br>"
+                              f"[당선작 발표] {row['당선작 발표']}<br>"
                               f"</div>"
-                              f"<div style='flex: none; padding: 5px;'>"
+                              f"<div style='padding-top: 5px;'>"
                               f"{all_images_html}"
-                              f"</div></div>")
+                              f"</div>")
 
                 folium.Marker(location=[row['위도'], row['경도']],
                               popup=folium.Popup(popup_text, max_width=300),
-                              tooltip=f"건물명: {row['건물명']}").add_to(clusters[sgg_code])
+                              tooltip=f"사업명: {row['사업명']}").add_to(clusters[sgg_code])
 
         # HTML 파일을 메모리에서 바이너리로 저장
         html_data = BytesIO()
